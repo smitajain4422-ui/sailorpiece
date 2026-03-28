@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sailor Piece | Script Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    
+    <style>
+        /* --- CORE MINIMALIST THEME --- */
+        body { 
+            margin: 0; padding: 0; font-family: 'Inter', sans-serif; 
+            background-color: #050505; color: #e5e5e5; overflow: hidden;
+            -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+
+        .animated-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: url('https://media.discordapp.net/attachments/1486075241720582247/1487442277809787011/images_3.jpeg?ex=69c92812&is=69c7d692&hm=bd1358efc3cd0652cb5d6a7add4158e3b94141f950915fcc2c0a66235c421f65&') repeat; background-size: cover;
+            animation: panBackground 60s linear infinite; z-index: -2; opacity: 0.1;
+        }
+        @keyframes panBackground { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* App Layout (Mobile First) */
+        .panel {
+            background: #0f0f0f; border: 1px solid #262626; border-radius: 16px;
+            width: 95%; max-width: 500px; height: 90vh; max-height: 850px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .content-area { flex: 1; overflow-y: auto; position: relative; width: 100%; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        /* Tabs & Screens */
+        .tab-content { display: none; padding: 24px; animation: fadeIn 0.2s; }
+        .tab-content.active { display: block; }
+        .screen { display: none; padding: 24px; animation: fadeIn 0.2s; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Buttons & Inputs */
+        .btn-blue { background: #2563eb; color: #fff; padding: 14px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; text-transform: uppercase; transition: 0.2s; border: none; cursor: pointer; width: 100%; text-align: center; display: block; }
+        .btn-blue:active { transform: scale(0.98); }
+        .btn-dark { background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-dark:hover { border-color: #2563eb; }
+        
+        .input-box { background: #050505; border: 1px solid #262626; color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 12px; font-size: 14px; outline: none; transition: 0.2s; }
+        .input-box:focus { border-color: #2563eb; }
+
+        /* Bottom Nav (Mobile) */
+        .bottom-nav {
+            display: flex; justify-content: space-around; align-items: center;
+            background: #0a0a0a; border-top: 1px solid #262626; padding: 12px 0;
+            padding-bottom: max(12px, env(safe-area-inset-bottom)); 
+            width: 100%; flex-shrink: 0;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #737373; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 25%; }
+        .nav-item.active { color: #3b82f6; }
+        .nav-icon { font-size: 20px; filter: grayscale(100%); transition: 0.2s; }
+        .nav-item.active .nav-icon { filter: grayscale(0%); transform: translateY(-2px); }
+
+        /* Console/Terminal */
+        .terminal-box { background: #050505; border: 1px solid #262626; border-radius: 8px; padding: 14px; height: 220px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; }
+        .log-line { opacity: 0; animation: fadeIn 0.2s forwards; margin-bottom: 4px; }
+        .log-sys { color: #a3a3a3; }
+        .log-ok { color: #22c55e; }
+        .log-err { color: #ef4444; }
+
+        /* Misc */
+        .faq-item { background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+        .offer-row { background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 14px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .offer-btn { background: #2563eb; color: white; padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+
+        /* --- DESKTOP RESPONSIVE CODE --- */
+        @media (min-width: 768px) {
+            .panel { max-width: 950px; height: 80vh; flex-direction: row; }
+            .bottom-nav { 
+                flex-direction: column; width: 110px; border-top: none; border-right: 1px solid #262626; 
+                padding: 40px 0; justify-content: flex-start; gap: 40px; height: 100%;
+            }
+            .nav-item { width: 100%; gap: 8px; }
+            .nav-icon { font-size: 24px; }
+            .desktop-container { max-width: 550px; margin: 0 auto; padding-top: 2vh; }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="panel">
+        
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('tab-home', this)">
+                <span class="nav-icon">⚓</span>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-faq', this)">
+                <span class="nav-icon">📜</span>
+                <span>FAQ</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-chat', this)">
+                <span class="nav-icon">🐌</span>
+                <span>Chat</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-profile', this)">
+                <span class="nav-icon">🏴‍☠️</span>
+                <span>Profile</span>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div id="global-loader" class="absolute inset-0 z-[100] bg-[#0f0f0f] flex flex-col items-center justify-center hidden">
+                <div class="w-8 h-8 border-4 border-[#262626] border-t-blue-600 rounded-full animate-spin mb-3"></div>
+                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Loading Data...</span>
+            </div>
+            
+            <div id="tab-home" class="tab-content active">
+                
+                <div id="screen-landing" class="screen active" style="padding:0;">
+                    <div class="desktop-container">
+                        <div class="border-b border-[#262626] pb-4 mb-5 flex justify-between items-center">
+                            <span class="text-lg font-bold text-white">Sailor Piece Hub</span>
+                            <span class="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded font-bold border border-blue-500/30">v2.4.1</span>
+                        </div>
+                        <img src="https://media.discordapp.net/attachments/1486075241720582247/1487442277809787011/images_3.jpeg?ex=69c92812&is=69c7d692&hm=bd1358efc3cd0652cb5d6a7add4158e3b94141f950915fcc2c0a66235c421f65&" class="w-full h-32 md:h-48 object-cover rounded-lg border border-[#262626] mb-5 opacity-80">
+                        <p class="text-sm text-gray-400 mb-6 leading-relaxed">
+                            Access the premium keyless script. Features include Auto Boss Rush, Infinite Tower Macro, and God Mode. Download securely below.
+                        </p>
+                        <button onclick="startUnlockSequence()" class="btn-blue">Unlock Script Now</button>
+                    </div>
+                </div>
+
+                <div id="screen-terminal" class="screen" style="padding:0;">
+                    <div class="desktop-container">
+                        <div class="border-b border-[#262626] pb-4 mb-5">
+                            <h2 class="text-lg font-bold text-white">System Check</h2>
+                            <p class="text-sm text-gray-400 mt-1">Verifying file integrity and session...</p>
+                        </div>
+                        <div id="terminal-output" class="terminal-box"></div>
+                    </div>
+                </div>
+
+                <div id="screen-tasks" class="screen" style="padding:0;">
+                    <div class="desktop-container">
+                        <div class="border-b border-[#262626] pb-4 mb-5">
+                            <h2 class="text-lg font-bold text-white">Manual Verification</h2>
+                            <p class="text-sm text-gray-400 mt-1">Complete any of the task from below to unlock your script!</p>
+                        </div>
+                        <div class="w-full bg-[#262626] h-1.5 rounded-full mb-5"><div id="progress-fill" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div></div>
+                        <div id="offers-list" class="max-h-[400px] overflow-y-auto"></div>
+                        <div id="loading-offers" class="flex flex-col items-center py-10 hidden">
+                            <div class="w-6 h-6 border-2 border-gray-600 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+                            <span class="text-xs font-bold text-gray-500">Connecting to server...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="screen-success" class="screen text-center" style="padding:0;">
+                    <div class="desktop-container">
+                        <div class="w-16 h-16 bg-blue-600/20 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-white mb-2">Unlocked!</h2>
+                        <p class="text-sm text-gray-400 mb-6">Verification complete. Paste this in your executor.</p>
+                        <div class="bg-[#050505] p-4 border border-[#262626] rounded-lg mb-6 text-left">
+                            <code class="text-xs text-blue-400 break-all select-all font-mono">loadstring(game:HttpGet("https://pastebin.com/raw/YOUR_LINK_HERE"))()</code>
+                        </div>
+                        <button class="btn-blue" onclick="this.innerText='Copied!'">Copy Script</button>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-faq" class="tab-content">
+                <div class="desktop-container max-w-4xl">
+                    <h2 class="text-lg font-bold text-white border-b border-[#262626] pb-4 mb-5">Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="faq-item mb-0"><h4 class="text-blue-400 font-bold mb-1 text-sm">Is this safe to use?</h4><p class="text-xs text-gray-400">Yes, the script uses a secure injection method to bypass the latest Sailor Piece anti-cheat.</p></div>
+                        <div class="faq-item mb-0"><h4 class="text-blue-400 font-bold mb-1 text-sm">Do I need an executor key?</h4><p class="text-xs text-gray-400">No, our hub is entirely keyless. You just need to complete a sponsor task once.</p></div>
+                        <div class="faq-item mb-0"><h4 class="text-blue-400 font-bold mb-1 text-sm">Does it work on Mobile?</h4><p class="text-xs text-gray-400">Fully optimized for Android executors like Delta and Hydrogen.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-chat" class="tab-content">
+                <div class="desktop-container">
+                    <h2 class="text-lg font-bold text-white border-b border-[#262626] pb-4 mb-5">Global Chat</h2>
+                    <div class="bg-[#050505] border border-[#262626] rounded-lg p-6 text-center mt-10">
+                        <span class="text-4xl mb-3 block">🐌</span>
+                        <h3 class="text-sm font-bold text-gray-300 mb-2">Den Den Mushi Disconnected</h3>
+                        <p class="text-xs text-gray-500">The global chat server is currently locked for maintenance to prevent spam. Please check back later.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-profile" class="tab-content">
+                <div class="desktop-container">
+                    <div id="profile-auth">
+                        <div class="text-center mb-6">
+                            <span class="text-5xl block mb-2">🏴‍☠️</span>
+                            <h2 class="text-lg font-bold text-white">Crew Member Portal</h2>
+                            <p class="text-xs text-gray-500 mt-1">Sign in to save your script configs.</p>
+                        </div>
+                        
+                        <div id="form-login">
+                            <input type="text" id="login-user" class="input-box" placeholder="Username">
+                            <input type="password" id="login-pass" class="input-box" placeholder="Password">
+                            <button onclick="handleLogin()" class="btn-blue mb-4">Log In</button>
+                            <p class="text-xs text-center text-gray-400">New here? <span class="text-blue-500 font-bold cursor-pointer" onclick="toggleAuthMode()">Create an account</span></p>
+                        </div>
+
+                        <div id="form-signup" class="hidden">
+                            <input type="text" id="sign-user" class="input-box" placeholder="Choose Username">
+                            <input type="password" id="sign-pass" class="input-box" placeholder="Choose Password">
+                            <button onclick="handleSignup()" class="btn-blue mb-4">Sign Up</button>
+                            <p class="text-xs text-center text-gray-400">Already a member? <span class="text-blue-500 font-bold cursor-pointer" onclick="toggleAuthMode()">Log In</span></p>
+                        </div>
+                    </div>
+
+                    <div id="profile-dashboard" class="hidden">
+                        <div class="flex items-center gap-4 border-b border-[#262626] pb-6 mb-6">
+                            <div class="relative w-16 h-16">
+                                <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Pirate" class="w-full h-full rounded-full border-2 border-blue-500 object-cover bg-gray-800">
+                            </div>
+                            <div>
+                                <h2 id="user-display-name" class="text-lg font-bold text-white">Username</h2>
+                                <p class="text-xs text-blue-400 font-bold">Verified Member</p>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Account Settings</h3>
+                        <div class="space-y-3 mb-8">
+                            <div>
+                                <input type="text" id="new-avatar-url" class="input-box" placeholder="Paste New Image URL here...">
+                                <button onclick="changeAvatar()" class="btn-dark">Update Profile Picture</button>
+                            </div>
+                            <div>
+                                <input type="password" id="new-password" class="input-box" placeholder="New Password...">
+                                <button onclick="changePassword()" class="btn-dark">Change Password</button>
+                            </div>
+                            <button class="btn-dark cursor-not-allowed opacity-50">View Script Statistics (Locked)</button>
+                        </div>
+
+                        <button onclick="handleLogout()" class="w-full bg-red-900/30 text-red-500 border border-red-900/50 padding-10 p-3 rounded-lg font-bold text-sm transition hover:bg-red-900/50">Log Out</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        // --- GLOBAL LOADER LOGIC ---
+        function triggerLoader(callback) {
+            const loader = document.getElementById('global-loader');
+            loader.classList.remove('hidden');
+            
+            setTimeout(() => {
+                callback();
+                loader.classList.add('hidden');
+            }, 600); 
+        }
+
+        // --- TAB NAVIGATION ---
+        function switchTab(tabId, navElement) {
+            if (navElement.classList.contains('active')) return; 
+            
+            triggerLoader(() => {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                
+                document.getElementById(tabId).classList.add('active');
+                navElement.classList.add('active');
+            });
+        }
+
+        function switchInnerScreen(hideId, showId) {
+            triggerLoader(() => {
+                document.getElementById(hideId).classList.remove('active');
+                document.getElementById(showId).classList.add('active');
+            });
+        }
+
+        // --- LOCAL STORAGE AUTH SYSTEM ---
+        let currentUser = JSON.parse(localStorage.getItem('sp_user'));
+
+        function initProfile() {
+            if (currentUser) {
+                document.getElementById('profile-auth').classList.add('hidden');
+                document.getElementById('profile-dashboard').classList.remove('hidden');
+                document.getElementById('user-display-name').innerText = currentUser.username;
+                if(currentUser.avatar) document.getElementById('user-avatar').src = currentUser.avatar;
+            } else {
+                document.getElementById('profile-auth').classList.remove('hidden');
+                document.getElementById('profile-dashboard').classList.add('hidden');
+            }
+        }
+
+        window.onload = () => { triggerLoader(() => { initProfile(); }); };
+
+        function toggleAuthMode() {
+            document.getElementById('form-login').classList.toggle('hidden');
+            document.getElementById('form-signup').classList.toggle('hidden');
+        }
+
+        function handleSignup() {
+            triggerLoader(() => {
+                const user = document.getElementById('sign-user').value.trim();
+                const pass = document.getElementById('sign-pass').value.trim();
+                if(!user || !pass) return alert("Fill all fields.");
+                currentUser = { username: user, password: pass, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user}` };
+                localStorage.setItem('sp_user', JSON.stringify(currentUser));
+                initProfile();
+            });
+        }
+
+        function handleLogin() {
+            triggerLoader(() => {
+                const user = document.getElementById('login-user').value.trim();
+                const pass = document.getElementById('login-pass').value.trim();
+                const savedUser = JSON.parse(localStorage.getItem('sp_user'));
+                
+                if (savedUser && savedUser.username === user && savedUser.password === pass) {
+                    currentUser = savedUser;
+                    initProfile();
+                } else {
+                    alert("Invalid credentials or account not found.");
+                }
+            });
+        }
+
+        function handleLogout() {
+            triggerLoader(() => {
+                currentUser = null;
+                document.getElementById('login-user').value = '';
+                document.getElementById('login-pass').value = '';
+                initProfile();
+            });
+        }
+
+        function changeAvatar() {
+            const url = document.getElementById('new-avatar-url').value.trim();
+            if(!url) return;
+            currentUser.avatar = url;
+            localStorage.setItem('sp_user', JSON.stringify(currentUser));
+            document.getElementById('user-avatar').src = url;
+            document.getElementById('new-avatar-url').value = '';
+            alert("Profile picture updated!");
+        }
+
+        function changePassword() {
+            const newPass = document.getElementById('new-password').value.trim();
+            if(!newPass) return;
+            currentUser.password = newPass;
+            localStorage.setItem('sp_user', JSON.stringify(currentUser));
+            document.getElementById('new-password').value = '';
+            alert("Password updated!");
+        }
+
+        // --- CONSOLE & CPA OFFER LOGIC ---
+        const SERVER_URL = "/api/check"; 
+        let allAvailableOffers = [], currentOfferIndex = 0, completedCount = 0, currentProgress = 0, completedOffers = [];
+
+        function startUnlockSequence() {
+            switchInnerScreen('screen-landing', 'screen-terminal');
+            
+            setTimeout(() => {
+                const lines = [
+                    { text: "[System] Requesting secure download link...", class: "log-sys", delay: 400 },
+                    { text: "[Security] Running background malware scan...", class: "log-sys", delay: 1200 },
+                    { text: "[Security] Scan complete. 0 Viruses found. File is safe.", class: "log-ok", delay: 2000 },
+                    { text: "[System] Verifying network connection...", class: "log-sys", delay: 2800 },
+                    { text: "[Error] Human Verification Failed. Anomalous traffic detected.", class: "log-err", delay: 3600 },
+                    { text: "[System] Redirecting to manual verification checkpoint...", class: "log-sys", delay: 4400 }
+                ];
+
+                const terminal = document.getElementById('terminal-output');
+                terminal.innerHTML = '';
+
+                lines.forEach(line => {
+                    setTimeout(() => {
+                        terminal.innerHTML += `<div class="log-line ${line.class}">${line.text}</div>`;
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }, line.delay);
+                });
+
+                setTimeout(() => {
+                    switchInnerScreen('screen-terminal', 'screen-tasks');
+                    fetchOffers();
+                }, 5500);
+            }, 600); 
+        }
+
+        function fetchOffers() {
+            $("#loading-offers").removeClass('hidden');
+            $("#offers-list").empty();
+            $.getJSON("https://api.ipify.org?format=json", function(ipData) {
+                const apiURL = `/api/offers?ip=${ipData.ip}&user_agent=${encodeURIComponent(navigator.userAgent)}`;
+                $.ajax({
+                    url: apiURL, method: "GET", dataType: "json",
+                    success: function(data) {
+                        $("#loading-offers").addClass('hidden');
+                        if (data.offers && data.offers.length > 0) {
+                            let uncompleted = data.offers.filter(o => !completedOffers.includes(o.name));
+                            allAvailableOffers = uncompleted.sort((a, b) => ((b.payout||0)*(b.cvr||1)) - ((a.payout||0)*(a.cvr||1)));
+                            currentOfferIndex = 0;
+                            for (let i = 0; i < Math.min(4, allAvailableOffers.length); i++) {
+                                renderOfferCard(allAvailableOffers[i], currentOfferIndex++);
+                            }
+                        } else {
+                            $("#offers-list").html('<p class="text-xs text-center text-gray-500 py-6">No tasks available.</p>');
+                        }
+                    },
+                    error: function() {
+                        $("#loading-offers").addClass('hidden');
+                        $("#offers-list").html('<p class="text-xs text-center text-red-500 py-6">Network error.</p>');
+                    }
+                });
+            });
+        }
+
+        function renderOfferCard(offer, index) {
+            let trackId = 'user_' + Math.floor(Math.random() * 1000000);
+            let link = offer.link + (offer.link.includes('?') ? '&' : '?') + `aff_sub5=${trackId}`;
+            let html = `
+                <div class="offer-row" id="offer-${index}" onclick="openOffer('${link}', this, '${trackId}', '${offer.name.replace(/'/g, "\\'")}')">
+                    <div class="flex-1 pr-4">
+                        <div class="text-[13px] font-bold text-white mb-1">${offer.name}</div>
+                        <div class="text-[11px] text-gray-400">Complete task to verify</div>
+                    </div>
+                    <div class="offer-btn">Start Task</div>
+                </div>`;
+            $("#offers-list").append(html);
+        }
+
+        function openOffer(url, el, trackId, offerName) {
+            $(el).find('.offer-btn').text('Checking...').css({background: '#262626', color: '#a3a3a3'});
+            window.open(url, '_blank');
+            const checkInt = setInterval(() => {
+                fetch(`${SERVER_URL}?tracking_id=${trackId}`).then(r => r.json()).then(data => {
+                    if (data.status === 'completed') { clearInterval(checkInt); handleOfferCompletion(el, offerName); }
+                }).catch(() => {});
+            }, 5000);
+        }
+
+        function handleOfferCompletion(el, offerName) {
+            completedCount++; completedOffers.push(offerName); 
+            const steps = [50, 75, 80, 86, 89, 90];
+            currentProgress = completedCount <= 6 ? steps[completedCount-1] : Math.min(99, currentProgress + 1);
+
+            $(el).fadeOut(200, function() {
+                $(this).remove();
+                if (currentOfferIndex < allAvailableOffers.length) {
+                    renderOfferCard(allAvailableOffers[currentOfferIndex++], currentOfferIndex);
+                    updateProgressBar(currentProgress); 
+                } else {
+                    updateProgressBar(100);
+                    setTimeout(() => switchInnerScreen('screen-tasks', 'screen-success'), 600);
+                }
+            });
+            if (currentOfferIndex < allAvailableOffers.length) updateProgressBar(currentProgress);
+        }
+
+        function updateProgressBar(percent) { document.getElementById('progress-fill').style.width = percent + '%'; }
+    </script>
+</body>
+</html>
