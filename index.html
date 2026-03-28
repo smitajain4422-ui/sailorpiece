@@ -95,7 +95,7 @@
 </head>
 <body>
     <div class="animated-bg"></div>
-    <div class="panel">
+        <div class="panel">
         
         <div class="bottom-nav">
             <div class="nav-item active" onclick="switchTab('tab-home', this)">
@@ -154,7 +154,13 @@
                             <h2 class="text-lg font-bold text-white">Manual Verification</h2>
                             <p class="text-sm text-gray-400 mt-1">Complete any of the task from below to unlock your script!</p>
                         </div>
+                        
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-gray-400">Progress</span>
+                            <span id="progress-text" class="text-xs font-bold text-blue-500">0%</span>
+                        </div>
                         <div class="w-full bg-[#262626] h-1.5 rounded-full mb-5"><div id="progress-fill" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div></div>
+                        
                         <div id="offers-list" class="max-h-[400px] overflow-y-auto"></div>
                         <div id="loading-offers" class="flex flex-col items-center py-10 hidden">
                             <div class="w-6 h-6 border-2 border-gray-600 border-t-blue-600 rounded-full animate-spin mb-3"></div>
@@ -176,8 +182,8 @@
                         <button class="btn-blue" onclick="this.innerText='Copied!'">Copy Script</button>
                     </div>
                 </div>
-            </div>
-            <div id="tab-faq" class="tab-content">
+    </div>
+                <div id="tab-faq" class="tab-content">
                 <div class="desktop-container max-w-4xl">
                     <h2 class="text-lg font-bold text-white border-b border-[#262626] pb-4 mb-5">Information</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -254,7 +260,7 @@
 
         </div>
     </div>
-    <script>
+        <script>
         // --- GLOBAL LOADER LOGIC ---
         function triggerLoader(callback) {
             const loader = document.getElementById('global-loader');
@@ -364,7 +370,13 @@
 
         // --- CONSOLE & CPA OFFER LOGIC ---
         const SERVER_URL = "/api/check"; 
-        let allAvailableOffers = [], currentOfferIndex = 0, completedCount = 0, currentProgress = 0, completedOffers = [];
+        let allAvailableOffers = [], currentOfferIndex = 0;
+        
+        // Load saved CPA progress from localStorage
+        let savedProgress = JSON.parse(localStorage.getItem('sp_cpa_progress')) || { count: 0, progress: 0, completed: [] };
+        let completedCount = savedProgress.count;
+        let currentProgress = savedProgress.progress;
+        let completedOffers = savedProgress.completed;
 
         function startUnlockSequence() {
             switchInnerScreen('screen-landing', 'screen-terminal');
@@ -399,6 +411,14 @@
         function fetchOffers() {
             $("#loading-offers").removeClass('hidden');
             $("#offers-list").empty();
+            
+            // If the user refreshed the page and they were already at 100%, show success immediately
+            if (currentProgress >= 100) {
+                updateProgressBar(100);
+                setTimeout(() => switchInnerScreen('screen-tasks', 'screen-success'), 600);
+                return;
+            }
+
             $.getJSON("https://api.ipify.org?format=json", function(ipData) {
                 const apiURL = `/api/offers?ip=${ipData.ip}&user_agent=${encodeURIComponent(navigator.userAgent)}`;
                 $.ajax({
@@ -409,6 +429,10 @@
                             let uncompleted = data.offers.filter(o => !completedOffers.includes(o.name));
                             allAvailableOffers = uncompleted.sort((a, b) => ((b.payout||0)*(b.cvr||1)) - ((a.payout||0)*(a.cvr||1)));
                             currentOfferIndex = 0;
+                            
+                            // Load initial progress bar position
+                            updateProgressBar(currentProgress);
+
                             for (let i = 0; i < Math.min(4, allAvailableOffers.length); i++) {
                                 renderOfferCard(allAvailableOffers[i], currentOfferIndex++);
                             }
@@ -453,12 +477,22 @@
             const steps = [50, 75, 80, 86, 89, 90];
             currentProgress = completedCount <= 6 ? steps[completedCount-1] : Math.min(99, currentProgress + 1);
 
+            // Save progress to local storage every time an offer is finished
+            localStorage.setItem('sp_cpa_progress', JSON.stringify({
+                count: completedCount,
+                progress: currentProgress,
+                completed: completedOffers
+            }));
+
             $(el).fadeOut(200, function() {
                 $(this).remove();
                 if (currentOfferIndex < allAvailableOffers.length) {
                     renderOfferCard(allAvailableOffers[currentOfferIndex++], currentOfferIndex);
                     updateProgressBar(currentProgress); 
                 } else {
+                    // Force complete if all offers are done
+                    currentProgress = 100;
+                    localStorage.setItem('sp_cpa_progress', JSON.stringify({ count: completedCount, progress: currentProgress, completed: completedOffers }));
                     updateProgressBar(100);
                     setTimeout(() => switchInnerScreen('screen-tasks', 'screen-success'), 600);
                 }
@@ -466,7 +500,12 @@
             if (currentOfferIndex < allAvailableOffers.length) updateProgressBar(currentProgress);
         }
 
-        function updateProgressBar(percent) { document.getElementById('progress-fill').style.width = percent + '%'; }
+        function updateProgressBar(percent) { 
+            document.getElementById('progress-fill').style.width = percent + '%'; 
+            if(document.getElementById('progress-text')) {
+                document.getElementById('progress-text').innerText = percent + '%';
+            }
+        }
     </script>
 </body>
 </html>
